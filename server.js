@@ -13,11 +13,8 @@ app.use(express.static('public'));
 
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI)
-        .then(() => console.log('✅ Connected to MongoDB'))
-        .catch(err => console.error('❌ MongoDB connection error:', err));
+        const conn = await mongoose.connect(process.env.MONGODB_URI);
 
-        });
         console.log(`MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
         console.error('MongoDB connection error:', error.message);
