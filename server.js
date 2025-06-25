@@ -13,7 +13,7 @@ app.use(express.static('public'));
 
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017', {
+        const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://rimjhimnagar2004:<db_password>@cluster0.7ljyn8d.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
