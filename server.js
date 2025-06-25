@@ -13,9 +13,10 @@ app.use(express.static('public'));
 
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://rimjhimnagar2004:piet22ad044@cluster0.7ljyn8d.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
+        const conn = await mongoose.connect(process.env.MONGODB_URI)
+        .then(() => console.log('✅ Connected to MongoDB'))
+        .catch(err => console.error('❌ MongoDB connection error:', err));
+
         });
         console.log(`MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
