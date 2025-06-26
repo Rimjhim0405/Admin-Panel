@@ -679,8 +679,8 @@
                     
                     setTimeout(() => {
                         // In production, you'd redirect to dashboard
-                        alert(`Welcome back, ${user.username}!\nYour unique ID: ${user.id}\nRedirecting to dashboard...`);
-                        // window.location.href = 'dashboard.html';
+                        alert(`Welcome back, ${user.username}!\nRedirecting to dashboard...`);
+                        window.location.href = 'dashboard.html';
                     }, 1500);
                 } else {
                     showMessage('Invalid username/email or password');
