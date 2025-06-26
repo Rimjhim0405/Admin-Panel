@@ -243,6 +243,7 @@
             font-size: 14px;
             font-weight: 500;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
 
         .forgot-password a:hover {
@@ -340,8 +341,27 @@
             font-size: 14px;
         }
 
-        .signup-form {
+        .signup-form, .forgot-form {
             display: none;
+        }
+
+        .back-to-login {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-to-login a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .back-to-login a:hover {
+            color: #764ba2;
+            text-decoration: underline;
         }
 
         @media (max-width: 480px) {
@@ -401,13 +421,13 @@
     <div class="auth-container">
         <div class="auth-header">
             <div class="logo">
-               <i class="fas fa-user-tie"></i>
+                <i class="fas fa-users"></i>
             </div>
             <h1 id="authTitle">Welcome Back</h1>
             <p id="authSubtitle">Sign in to your account</p>
         </div>
 
-        <div class="auth-tabs">
+        <div class="auth-tabs" id="authTabs">
             <div class="auth-tab active" id="loginTab" onclick="switchTab('login')">Login</div>
             <div class="auth-tab" id="signupTab" onclick="switchTab('signup')">Sign Up</div>
         </div>
@@ -417,9 +437,9 @@
         <!-- Login Form -->
         <form id="loginForm" class="auth-form login-form">
             <div class="form-group">
-                <label for="loginUsername">Username</label>
+                <label for="loginUsername">Username or Email</label>
                 <div class="input-container">
-                    <input type="text" id="loginUsername" name="username" class="form-input" placeholder="Enter your username" required>
+                    <input type="text" id="loginUsername" name="username" class="form-input" placeholder="Enter your username or email" required>
                     <i class="fas fa-user input-icon"></i>
                 </div>
             </div>
@@ -432,7 +452,7 @@
                     <i class="fas fa-eye password-toggle" onclick="togglePassword('loginPassword', this)"></i>
                 </div>
                 <div class="forgot-password">
-                    <a href="#" onclick="showForgotPassword()">Forgot Password?</a>
+                    <a onclick="showForgotPassword()">Forgot Password?</a>
                 </div>
             </div>
 
@@ -484,40 +504,85 @@
             </button>
         </form>
 
+        <!-- Forgot Password Form -->
+        <form id="forgotForm" class="auth-form forgot-form">
+            <div class="form-group">
+                <label for="forgotEmail">Email Address</label>
+                <div class="input-container">
+                    <input type="email" id="forgotEmail" name="email" class="form-input" placeholder="Enter your email address" required>
+                    <i class="fas fa-envelope input-icon"></i>
+                </div>
+            </div>
+
+            <button type="submit" class="auth-btn" id="forgotBtn">
+                <span class="loading" id="forgotLoading"></span>
+                <span id="forgotBtnText">Send Reset Link</span>
+            </button>
+
+            <div class="back-to-login">
+                <a onclick="switchTab('login')">← Back to Login</a>
+            </div>
+        </form>
+
         <div class="footer-text">
             © 2025 User Management System. All rights reserved.
         </div>
     </div>
 
     <script>
-        // Store users in memory (in production, this would be handled by a backend server)
+        // Enhanced user storage with unique IDs
         let users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+        let passwordResetTokens = JSON.parse(localStorage.getItem('passwordResetTokens') || '{}');
+
+        // Generate unique user ID
+        function generateUserId() {
+            return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Generate password reset token
+        function generateResetToken() {
+            return Math.random().toString(36).substr(2, 15) + Date.now().toString(36);
+        }
 
         function switchTab(tab) {
             const loginTab = document.getElementById('loginTab');
             const signupTab = document.getElementById('signupTab');
             const loginForm = document.querySelector('.login-form');
             const signupForm = document.querySelector('.signup-form');
+            const forgotForm = document.querySelector('.forgot-form');
             const authTitle = document.getElementById('authTitle');
             const authSubtitle = document.getElementById('authSubtitle');
             const messageContainer = document.getElementById('messageContainer');
+            const authTabs = document.getElementById('authTabs');
 
             messageContainer.innerHTML = '';
+
+            // Hide all forms
+            loginForm.style.display = 'none';
+            signupForm.style.display = 'none';
+            forgotForm.style.display = 'none';
 
             if (tab === 'login') {
                 loginTab.classList.add('active');
                 signupTab.classList.remove('active');
                 loginForm.style.display = 'block';
-                signupForm.style.display = 'none';
                 authTitle.textContent = 'Welcome Back';
                 authSubtitle.textContent = 'Sign in to your account';
-            } else {
+                authTabs.style.display = 'flex';
+            } else if (tab === 'signup') {
                 signupTab.classList.add('active');
                 loginTab.classList.remove('active');
                 signupForm.style.display = 'block';
-                loginForm.style.display = 'none';
                 authTitle.textContent = 'Create Account';
                 authSubtitle.textContent = 'Sign up for a new account';
+                authTabs.style.display = 'flex';
+            } else if (tab === 'forgot') {
+                loginTab.classList.remove('active');
+                signupTab.classList.remove('active');
+                forgotForm.style.display = 'block';
+                authTitle.textContent = 'Reset Password';
+                authSubtitle.textContent = 'Enter your email to receive reset instructions';
+                authTabs.style.display = 'none';
             }
         }
 
@@ -547,22 +612,46 @@
                 </div>
             `;
         }
+
         function resetButton(btnId, loadingId, textId, originalText) {
             document.getElementById(loadingId).style.display = 'none';
             document.getElementById(textId).textContent = originalText;
             document.getElementById(btnId).disabled = false;
         }
 
+        function showForgotPassword() {
+            switchTab('forgot');
+        }
+
+        // Simulate email sending (in production, this would call your backend API)
+        function simulateEmailSend(email, resetToken) {
+            // This is a simulation - in production, you'd call your backend
+            console.log(`Simulated email sent to: ${email}`);
+            console.log(`Reset token: ${resetToken}`);
+            console.log(`Reset link: ${window.location.origin}/reset-password.html?token=${resetToken}`);
+            
+            // Store the token with expiration (1 hour)
+            passwordResetTokens[resetToken] = {
+                email: email,
+                expires: Date.now() + (60 * 60 * 1000), // 1 hour
+                used: false
+            };
+            localStorage.setItem('passwordResetTokens', JSON.stringify(passwordResetTokens));
+            
+            return true; // Simulate successful email sending
+        }
+
+        // Login Form Handler
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const username = document.getElementById('loginUsername').value.trim();
+            const usernameOrEmail = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
             const loginBtn = document.getElementById('loginBtn');
             const loading = document.getElementById('loginLoading');
             const btnText = document.getElementById('loginBtnText');
 
-            if (!username || !password) {
+            if (!usernameOrEmail || !password) {
                 showMessage('Please fill in all fields');
                 return;
             }
@@ -572,26 +661,35 @@
             loginBtn.disabled = true;
 
             setTimeout(() => {
-                const user = users.find(u => u.username === username && u.password === password);
+                // Find user by username or email
+                const user = users.find(u => 
+                    (u.username === usernameOrEmail || u.email === usernameOrEmail) && 
+                    u.password === password
+                );
 
                 if (user) {
+                    // Store session data with unique user ID
                     sessionStorage.setItem('isLoggedIn', 'true');
-                    sessionStorage.setItem('username', username);
+                    sessionStorage.setItem('userId', user.id);
+                    sessionStorage.setItem('username', user.username);
                     sessionStorage.setItem('userEmail', user.email);
                     sessionStorage.setItem('loginTime', new Date().toISOString());
 
                     showMessage('Login successful! Redirecting...', 'success');
                     
                     setTimeout(() => {
-                        window.location.href = 'dashboard.html';
+                        // In production, you'd redirect to dashboard
+                        alert(`Welcome back, ${user.username}!\nYour unique ID: ${user.id}\nRedirecting to dashboard...`);
+                        // window.location.href = 'dashboard.html';
                     }, 1500);
                 } else {
-                    showMessage('Invalid username or password');
+                    showMessage('Invalid username/email or password');
                     resetButton('loginBtn', 'loginLoading', 'loginBtnText', 'Sign In');
                 }
             }, 1000);
         });
 
+        // Signup Form Handler
         document.getElementById('signupForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -634,35 +732,93 @@
 
             setTimeout(() => {
                 const newUser = {
+                    id: generateUserId(),
                     username: username,
                     email: email,
                     password: password,
-                    createdAt: new Date().toISOString()
+                    createdAt: new Date().toISOString(),
+                    lastLogin: null
                 };
 
                 users.push(newUser);
                 localStorage.setItem('registeredUsers', JSON.stringify(users));
 
-                showMessage('Account created successfully! You can now log in.', 'success');
+                showMessage(`Account created successfully! Your unique ID: ${newUser.id}. You can now log in.`, 'success');
                 resetButton('signupBtn', 'signupLoading', 'signupBtnText', 'Create Account');
                 
                 document.getElementById('signupForm').reset();
                 setTimeout(() => {
                     switchTab('login');
-                }, 2000);
+                }, 3000);
             }, 1000);
         });
 
-        function showForgotPassword() {
-            alert('Forgot Password functionality would be implemented here.\n\nFor now, please create a new account if you forgot your credentials.');
-        }
+        // Forgot Password Form Handler
+        document.getElementById('forgotForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('forgotEmail').value.trim();
+            const forgotBtn = document.getElementById('forgotBtn');
+            const loading = document.getElementById('forgotLoading');
+            const btnText = document.getElementById('forgotBtnText');
 
+            if (!email) {
+                showMessage('Please enter your email address');
+                return;
+            }
+
+            const user = users.find(u => u.email === email);
+            if (!user) {
+                showMessage('No account found with this email address');
+                return;
+            }
+
+            loading.style.display = 'inline-block';
+            btnText.textContent = 'Sending...';
+            forgotBtn.disabled = true;
+
+            setTimeout(() => {
+                const resetToken = generateResetToken();
+                const emailSent = simulateEmailSend(email, resetToken);
+
+                if (emailSent) {
+                    showMessage('Password reset instructions have been sent to your email address. Please check your inbox.', 'success');
+                    
+                    // Show additional info for demo purposes
+                    setTimeout(() => {
+                        alert(`Demo Info:\nReset token: ${resetToken}\nThis would normally be sent via email.\nIn production, you would implement a proper email service.`);
+                    }, 2000);
+                } else {
+                    showMessage('Failed to send reset email. Please try again.');
+                }
+
+                resetButton('forgotBtn', 'forgotLoading', 'forgotBtnText', 'Send Reset Link');
+                
+                if (emailSent) {
+                    document.getElementById('forgotForm').reset();
+                    setTimeout(() => {
+                        switchTab('login');
+                    }, 3000);
+                }
+            }, 1500);
+        });
+
+        // Clear messages when typing
         const inputs = document.querySelectorAll('.form-input');
         inputs.forEach(input => {
             input.addEventListener('input', function() {
                 document.getElementById('messageContainer').innerHTML = '';
             });
         });
+
+        // Update last login time
+        function updateLastLogin(userId) {
+            const userIndex = users.findIndex(u => u.id === userId);
+            if (userIndex !== -1) {
+                users[userIndex].lastLogin = new Date().toISOString();
+                localStorage.setItem('registeredUsers', JSON.stringify(users));
+            }
+        }
     </script>
 </body>
 </html>
